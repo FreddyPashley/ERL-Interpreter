@@ -1,12 +1,29 @@
+# Imports
 import flask
 import subprocess
 import os
 import json
 import shutil
 
-iteration_timeout = 10  # secs
-brackets = False  # curly
 
+# Utilities
+def findIndent(string:str, indent_length:int=None):
+    """Find spaces before other characters in a string"""
+    indent = 0
+    for character in string:
+        if character == " ":
+            indent += 1
+        else:
+            break
+    if indent_length:
+        return (" "*indent_length) * indent
+    else:
+        return indent
+
+
+# Global constants
+iteration_timeout = 10  # secs
+brackets = False  # (force curly)
 keywords = {
     "endwhile": "",
     "endfunction": "",
@@ -30,7 +47,6 @@ keywords = {
     ".readLine(": ".readline(",
     ".writeLine(": ".writelines("
 }
-
 placeholder = """
 function factorial(n)
     if n <= 1 then
@@ -60,7 +76,10 @@ for x=-7 to 12 step 3
 next x
 """
 
-def run_code(code):
+
+# Main
+def run_code(code:str):
+    """Convert ERL string -> Python 3 list of lines"""
     lines = [l.strip("\n") for l in code.split("\n")]
     if brackets: lines = [i.strip() for i in lines]
     codelines = []
@@ -102,10 +121,7 @@ def run_code(code):
                 line = "print('File open() blocked due to attempt to reach outside environment')"
 
         elif ".writeLine(" in line:
-            indent = ""
-            for c in line:
-                if c == " ": indent += " "
-                else: break
+            indent = findIndent(line, indent_length=1)
             file_obj = line.strip("\r").split(".writeLine")[0]
             to_write = line.strip("\r").split(".writeLine")[1].strip("(").strip(")").strip('"')
             counter = line_count
@@ -129,17 +145,9 @@ def run_code(code):
 
         elif line.strip() == "do":
             do_count += 1
-            indent = 0
-            for c in line:
-                if c == " ":
-                    indent += 1
-                else: break
+            indent = findIndent(line)
             for l in lines:
-                l_indent = 0
-                for c in l:
-                    if c == " ":
-                        l_indent += 1
-                    else: break
+                l_indent = findIndent(l)
                 if l_indent == indent and l.strip().startswith("until"): break
             condition = l.strip().replace("until ", "")
             i_num = 0
@@ -149,18 +157,11 @@ def run_code(code):
                 while "i"+str(i_num) in i: i_num += 1
             i_var = "i"+str(i_num)
             next_line = lines[line_count+1] if line_count+1 in range(len(lines)) else ""
-            next_line_indent = 0
-            for c in next_line:
-                if c == " ": next_line_indent += 1
-                else: break
-            line = [f"{' '*indent}{i_var} = True", f"{' '*indent}while {i_var} is True or not {condition}:", f"{' '*next_line_indent}{i_var} = False"]
+            next_line_indent = findIndent(next_line, indent_length=1)
+            line = [f"{next_line_indent}{i_var} = True", f"{next_line_indent}while {i_var} is True or not {condition}:", f"{next_line_indent}{i_var} = False"]
         elif line.strip().startswith("for "):
             for_count += 1
-            indent = 0
-            for c in line:
-                if c == " ":
-                    indent += 1
-                else: break
+            indent = findIndent(line, indent_length=1)
             line = line.strip("}").strip("{").strip().split() if brackets else line.split()
             if "step" in line:
                 keyword, start, to, end, step, stepper = line
@@ -170,7 +171,7 @@ def run_code(code):
             start = start.strip().split("=")
             i_var, starter = start
             stepper = f",{stepper}" if stepper else ""
-            py_line = " "*indent + f"for {i_var} in range({starter},{end}{stepper})" + ": " + ("{" if brackets else "")
+            py_line = indent + f"for {i_var} in range({starter},{end}{stepper})" + ": " + ("{" if brackets else "")
             line = py_line
 
         elif "next " in line: endfor_count += 1; continue
@@ -202,12 +203,20 @@ def run_code(code):
                     indent_lvl = indent_lvl - 1 if indent_lvl-1 >= 0 else 0
 
     messages = []
-    if function_count != endfunction_count: messages.append(f"'function/endfunction' count doesn't match ({function_count}/{endfunction_count})")
-    if if_count != endif_count: messages.append(f"'if/endif' count doesn't match ({if_count}/{endif_count})")
-    if for_count != endfor_count: messages.append(f"'for/next var' count doesn't match ({for_count}/{endfor_count})")
-    if while_count != endwhile_count: messages.append(f"while/endwhile count doesn't match ({while_count}/{endwhile_count})")
-    if do_count != until_count: messages.append(f"do/until count doesn't match ({do_count}/{until_count})")
-    if messages != []: messages.insert(0, "Server message: note that python accepts lack of 'end' statements however this isn't necessarily correct:")
+
+    if function_count != endfunction_count:
+        messages.append(f"'function/endfunction' count doesn't match ({function_count}/{endfunction_count})")
+    if if_count != endif_count:
+        messages.append(f"'if/endif' count doesn't match ({if_count}/{endif_count})")
+    if for_count != endfor_count:
+        messages.append(f"'for/next var' count doesn't match ({for_count}/{endfor_count})")
+    if while_count != endwhile_count:
+        messages.append(f"while/endwhile count doesn't match ({while_count}/{endwhile_count})")
+    if do_count != until_count:
+        messages.append(f"do/until count doesn't match ({do_count}/{until_count})")
+    
+    if messages != []:
+        messages.insert(0, "Server message: note that python accepts lack of 'end' statements however this isn't necessarily correct:")
 
     codelines.insert(0, f"os.chdir('./code{process_i}')")
     codelines.insert(0, "import os")
@@ -228,19 +237,15 @@ def run_code(code):
 
         for i in range(len(code_run)):
             if code_run[i].strip() != "":
-                spaces = 0
                 chars = code_run[i]
-                for char in chars:
-                    if char == " ":
-                        spaces += 4
-                    else: break
+                spaces = findIndent(chars) * 4
             else:
                 code_run[i] = ""
                 spaces = 0
             code_run[i] = [code_run[i], spaces]
 
-        code_run.pop(0)  # import os, os.chdir (remove)
-        code_run.pop(0)
+        code_run.pop(0)  # import os
+        code_run.pop(0)  # os.chdir()
 
         shutil.rmtree(f"./code{process_i}")
 
@@ -272,6 +277,7 @@ app = flask.Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    """Flask page"""
     if flask.request.method == "POST":
         if "textareaValue" in flask.request.form:
             textareaValue = flask.request.form["textareaValue"]
