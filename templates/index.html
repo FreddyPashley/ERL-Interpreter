@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Sans Gothic">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=VT323">
+    <title>ERL Interpreter</title>
+</head>
+<body>
+    <section class="container">
+        <form method="post" id="form0" action="{{url_for('index')}}">
+            <center><button type="submit" name="clear" id="run" style="background-color: gray;">&#10006; Clear all</button></center>
+        </form>
+
+        <div id="col-1">
+            <form method="post" id="form1" action="{{url_for('index')}}" enctype="multipart/form-data">
+                <center><button type="submit" name="run" id="run" style="width: 102%;">&#9658; Run</button></center>
+                <textarea rows="100%" cols="100%" style="width:100%;height:100vh;" name="code" id="code">{{code}}</textarea>
+            </form>
+        </div>
+
+        {% if output != [] %}
+            <div id="col-2" style="font-family: 'Noto Sans Gothic', 'Lucida Sans', Geneva, sans-serif;">
+                <form method="post" id="form2" action="{{url_for('index')}}">
+                    <center><button type="submit" name="run" id="run" style="background-color: #f00;border: 1px solid #f00;border-radius:5px;">&#9888; Report unexpected output</button></center>
+                    <input type="hidden" id="textareaValue" name="textareaValue" value="">
+                    <input type="hidden" id="codeValue" name="codeValue" value="{{output}}">
+                </form>
+
+                {% if py_lines != [] %}
+                    <ul style="list-style:none;">
+                    {% for l in py_lines %}
+                        {% if l[0] == "" %}
+                            <br>
+                        {% else %}
+                            <li style="margin-left:{{l[1]}}px;">{{l[0]}}</li>
+                        {% endif %}
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+                <hr>
+                <ul style="list-style:none;">
+                {% for o in output %}
+                <li>{{o}}</li>
+                {% endfor %}
+                </ul>
+                
+            </div>
+        {% endif %}
+
+    </section>
+    <script>
+        document.getElementById('form2').addEventListener('submit', function (event) {
+            // Get the value from the textarea in Form 1
+            var textareaValue = document.getElementById('code').value;
+
+            // Update the value of the hidden input field in Form 2
+            document.getElementById('textareaValue').value = textareaValue;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+body {
+    /* font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; */
+    font-family: "VT323", "Lucida Sans", Geneva, sans-serif;
+    background-color: #000;
+}
+
+textarea {
+    font-family: inherit;
+    font-size: larger;
+    color: white;
+    background-color: #000114;
+    border: 1px solid #000114;
+    border-radius: 5px;
+    padding: 1%;
+    resize: none;
+    color: green;
+}
+
+.container {
+    display: inline;
+}
+  
+#col-1 {
+    float: left;
+    width: 49%;
+    height: 100vh;
+}
+
+#col-2 {
+    color: white;
+    float: right;
+    width: 49%;
+    height: 100%;
+    background-color: #000114;
+    /* padding: 0 0 0 2%; */
+    border: 1px solid #000114;
+    border-radius: 5px;
+    overflow-wrap: break-word;
+    color: green;
+}
+
+#run {
+    padding: 2%;
+    background-color: #016903;
+    border: 1px solid #016903;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    width: 100%;
+    font-size: larger;
+    color: white;
+    font-weight: bold;
+}
+
+#run:hover {
+    cursor: pointer;
+}
